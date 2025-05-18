@@ -1,81 +1,70 @@
-import React from 'react';
-import { collection, getDocs, setDoc, doc } from 'firebase/firestore';
-import { db } from '../firebase';
-import { AppUsage, CategorySummary } from '../types';
-import Header from '../components/Header';
-import DonutChart from '../components/DonutChart';
-import AppList from '../components/AppList';
-import Summary from '../components/Summary';
+import React, { useState, useEffect } from "react";
+import { Container, Typography, Card, CardContent, Chip, Box } from "@mui/material";
+import { fetchUserData } from "../services/firebaseApi";
+import { CustomPieChart } from "../components/PieChart";
+import AppList from "../components/AppList";
+import ToggleSwitch from "../components/ToggleSwitch";
 
 const HomePage: React.FC = () => {
-  const [apps, setApps] = React.useState<AppUsage[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const [userData, setUserData] = useState<any>({});
+  const [period, setPeriod] = useState<"day" | "week">("day");
 
-  React.useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const snapshot = await getDocs(collection(db, 'appUsage'));
-        const data: AppUsage[] = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        } as AppUsage));
-        setApps(data);
-      } catch (error) {
-        console.error("Error fetching data: ", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+  useEffect(() => {
+    fetchUserData(setUserData);
   }, []);
 
-  const totalMinutes = apps.reduce((sum, app) => sum + app.minutes, 0);
-  const categoryMap = apps.reduce((acc, app) => {
-    acc[app.category] = (acc[app.category] || 0) + app.minutes;
-    return acc;
-  }, {} as Record<string, number>);
-  const summaries: CategorySummary[] = Object.entries(categoryMap).map(([category, minutes]) => ({
-    category,
-    minutes,
-  }));
-  const mostUsed = summaries.length > 0
-    ? summaries.reduce((a, b) => (a.minutes > b.minutes ? a : b)).category
-    : 'None';
-  const percentageChange = 15;
+  const appUsage = userData.appUsage || {};
+  const today = "2025-05-18";
+  const productiveApps = ["Browser"];
+  const entertainmentApps = ["Instagram", "YouTube", "Telegram", "GameApp", "TikTok"];
 
-  React.useEffect(() => {
-    const initializeData = async () => {
-      const snapshot = await getDocs(collection(db, 'appUsage'));
-      if (snapshot.empty) {
-        const dummyData: AppUsage[] = [
-          { id: '1', name: 'Pinterest', minutes: 104, category: 'Social Networks' },
-          { id: '2', name: 'YouTube', minutes: 24, category: 'Social Networks' },
-          { id: '3', name: 'Facebook', minutes: 24, category: 'Social Networks' },
-          { id: '4', name: 'Chrome', minutes: 24, category: 'Productivity' },
-          { id: '5', name: 'Figma', minutes: 24, category: 'Productivity' },
-          { id: '6', name: 'Strava', minutes: 30, category: 'Sports' },
-        ];
-        dummyData.forEach(async (app) => {
-          await setDoc(doc(db, 'appUsage', app.id), app);
-        });
-      }
-    };
-    initializeData();
-  }, []);
+  const filterByPeriod = (data: Record<string, { timeSpent: number; date: string }>) =>
+    period === "day"
+      ? Object.fromEntries(Object.entries(data).filter(([, { date }]) => date === today))
+      : data;
 
-  if (loading) return <div className="text-center mt-10">Loading...</div>;
+  const filteredApps = filterByPeriod(appUsage);
+  const productiveTime = Object.entries(filteredApps)
+    .filter(([app]) => productiveApps.includes(app))
+    .reduce((sum, [, { timeSpent }]) => sum + timeSpent, 0);
+  const entertainmentTime = Object.entries(filteredApps)
+    .filter(([app]) => entertainmentApps.includes(app))
+    .reduce((sum, [, { timeSpent }]) => sum + timeSpent, 0);
+  const totalTime = productiveTime + entertainmentTime;
+  const percentageChange = Math.round(((totalTime - 160) / 160) * 100); // Пример расчёта изменения
 
   return (
-    <div>
-      <Header />
-      <div className="p-4">
-        <div className="bg-white rounded-lg shadow p-4">
-          <DonutChart summaries={summaries} />
-          <Summary totalMinutes={totalMinutes} mostUsed={mostUsed} percentageChange={percentageChange} />
-          <AppList apps={apps} />
-        </div>
-      </div>
-    </div>
+    <Container maxWidth="sm">
+      <ToggleSwitch value={period} onChange={setPeriod} />
+      <Card sx={{ mt: 2, boxShadow: 3 }}>
+        <CardContent>
+          <Typography variant="h5" align="center" gutterBottom>
+            {totalTime} мин
+          </Typography>
+          <Box display="flex" justifyContent="center" alignItems="center" mb={2}>
+            <Chip
+              label={`+${percentageChange}%`}
+              color={percentageChange > 0 ? "error" : "success"}
+              size="small"
+              sx={{ position: "absolute", mt: -4, ml: 10 }}
+            />
+            <CustomPieChart productive={productiveTime} entertainment={entertainmentTime} />
+          </Box>
+          <Box display="flex" justifyContent="center" gap={2} mb={2}>
+            <Chip label="Развлечения" color="warning" variant="outlined" />
+            <Chip label="Продуктивность" color="primary" variant="outlined" />
+          </Box>
+        </CardContent>
+      </Card>
+      <Typography variant="subtitle1" align="center" sx={{ mt: 2 }}>
+        Самые используемые
+      </Typography>
+      <Card sx={{ mt: 1, boxShadow: 2 }}>
+        <CardContent>
+          <AppList apps={filteredApps} />
+        </CardContent>
+      </Card>
+    </Container>
   );
 };
 

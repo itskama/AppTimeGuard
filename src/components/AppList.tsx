@@ -1,26 +1,14 @@
-import { List, ListItem, ListItemText, Divider } from '@mui/material';
-import { AppUsage } from '../types';
+import React from "react";
+import { List, ListItem, ListItemText } from "@mui/material";
 
-interface AppListProps {
-  apps: AppUsage[];
-}
-
-const AppList: React.FC<AppListProps> = ({ apps }) => {
-  return (
-    <List>
-      {apps.map(app => (
-        <div key={app.id}>
-          <ListItem>
-            <ListItemText
-              primary={app.name}
-              secondary={`${Math.floor(app.minutes / 60)}h ${app.minutes % 60}m - ${app.category}`}
-            />
-          </ListItem>
-          <Divider />
-        </div>
-      ))}
-    </List>
-  );
-};
+const AppList: React.FC<{ apps: Record<string, { timeSpent: number; date: string }> }> = ({ apps }) => (
+  <List>
+    {Object.entries(apps).map(([appName, { timeSpent }]) => (
+      <ListItem key={appName}>
+        <ListItemText primary={appName} secondary={`${timeSpent} мин`} />
+      </ListItem>
+    ))}
+  </List>
+);
 
 export default AppList;
