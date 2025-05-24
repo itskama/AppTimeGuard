@@ -5,10 +5,12 @@ import HomeIcon from "@mui/icons-material/Home";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import FlagIcon from "@mui/icons-material/Flag";
 import SettingsIcon from "@mui/icons-material/Settings";
+import AddCircleIcon from "@mui/icons-material/AddCircle";
 import HomePage from "./pages/HomePage";
 import ReportPage from "./pages/ReportPage";
 import GoalsPage from "./pages/GoalsPage";
 import SettingsPage from "./pages/SettingsPage";
+import AddUsagePage from "./pages/AddUsagePage";
 
 const App: React.FC = () => {
   const [value, setValue] = useState(0);
@@ -21,6 +23,7 @@ const App: React.FC = () => {
           <Route path="/report" element={<ReportPage />} />
           <Route path="/goals" element={<GoalsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/add-usage" element={<AddUsagePage />} />
         </Routes>
         <BottomNavigation
           value={value}
@@ -31,6 +34,7 @@ const App: React.FC = () => {
           <BottomNavigationAction label="Главная" icon={<HomeIcon />} component={Link} to="/" />
           <BottomNavigationAction label="Отчёт" icon={<BarChartIcon />} component={Link} to="/report" />
           <BottomNavigationAction label="Цели" icon={<FlagIcon />} component={Link} to="/goals" />
+          <BottomNavigationAction label="Добавить" icon={<AddCircleIcon />} component={Link} to="/add-usage" />
           <BottomNavigationAction label="Настройки" icon={<SettingsIcon />} component={Link} to="/settings" />
         </BottomNavigation>
       </Box>
