@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Container, Typography, Card, CardContent, TextField, Button, FormControl, InputLabel, Select, MenuItem, Box } from "@mui/material";
-import { getDatabase, ref, onValue, update, push } from "firebase/database";
+import { getDatabase, ref, onValue, update, set } from "firebase/database";
 import { initializeApp } from "firebase/app";
 import { useNavigate } from "react-router-dom";
 
@@ -19,18 +19,20 @@ const AddUsagePage: React.FC = () => {
   const [newAppCategory, setNewAppCategory] = useState<"social" | "entertainment" | "education" | "work" | "other">("social");
   const navigate = useNavigate();
 
+  // Загружаем список существующих приложений
   useEffect(() => {
     const userRef = ref(database, "users/user123/appUsage");
     onValue(userRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        const appList = Object.keys(data);
+        const appList = Object.keys(data); // Теперь ключи — это названия приложений
         setApps(appList);
         if (appList.length > 0) setSelectedApp(appList[0]);
       }
     });
   }, []);
 
+  // Добавление времени в существующее приложение
   const handleAddTime = () => {
     if (!selectedApp || !timeSpent || isNaN(Number(timeSpent))) return;
 
@@ -41,7 +43,6 @@ const AddUsagePage: React.FC = () => {
       let newTimeSpent = Number(timeSpent);
 
       if (currentData && currentData.date === today) {
-      
         newTimeSpent += currentData.timeSpent || 0;
       }
 
@@ -54,12 +55,13 @@ const AddUsagePage: React.FC = () => {
     }, { onlyOnce: true });
   };
 
+  // Добавление нового приложения
   const handleAddNewApp = () => {
     if (!newAppName) return;
 
-    const userRef = ref(database, "users/user123/appUsage");
-    const newAppRef = push(userRef);
-    update(newAppRef, {
+    // Используем название приложения как ключ
+    const userRef = ref(database, `users/user123/appUsage/${newAppName}`);
+    set(userRef, {
       timeSpent: 0,
       date: "2025-05-24",
       category: newAppCategory
